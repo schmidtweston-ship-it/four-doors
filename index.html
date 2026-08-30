@@ -8,6 +8,15 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="description" content="Four Doors. A walk, not a treatment. You choose." />
   <title>Four Doors</title>
+  <script>
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search);
+        var h = (location.hash || "").replace(/^#/, "").split("?")[0];
+        if (q.has("go") || h === "go") location.replace("./go.html");
+      } catch (e) {}
+    })();
+  </script>
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
@@ -29,7 +38,7 @@
     <section id="view-home" class="view" aria-label="Home">
       <div class="top">
         <div class="brand" id="home-brand">Four Doors</div>
-        <div>
+        <div id="home-nav">
           <button type="button" class="linkish" id="home-setup">Setup</button>
           ·
           <button type="button" class="linkish" id="home-about">About</button>
@@ -70,6 +79,7 @@
         </div>
       </div>
       <p class="safety" id="safety-line"></p>
+      <p class="guest-foot" id="guest-foot" hidden>A walk. Not treatment. · <a class="linkish" href="./index.html">Full app</a></p>
     </section>
 
     <section id="view-setup" class="view" aria-label="Setup">
@@ -211,6 +221,7 @@
         <button type="button" class="linkish" id="about-home">Home</button>
       </div>
       <p>Four Doors is a tool. A mixture. The person chooses.</p>
+      <p>There is a link for someone who has never set up: they land on the doors. Share <a class="linkish" href="./go.html">go.html</a>.</p>
       <p>Door 1 meets you where you are, then walks. That match-then-shift idea comes from Ira Altshuler's music work in the 1940s.</p>
       <p>Door 2 goes to the destination first. Music therapists call that compensation (Wigram and others).</p>
       <p>Door 3 locks to a body tempo and moves it. People call that kind of locking entrainment.</p>
