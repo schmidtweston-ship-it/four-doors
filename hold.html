@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0807" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Hold. You don't have to choose." />
+  <title>Hold.</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <link rel="stylesheet" href="./styles.css?v=5" />
+</head>
+<body class="hold">
+  <div class="hold-root">
+    <div class="hold-wash" id="hold-wash" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <a class="hold-out" href="./go.html">Four doors</a>
+    <button type="button" class="hold-go" id="hold-go" aria-label="Hold">
+      <span class="hold-orb" id="hold-orb" aria-hidden="true"></span>
+      <span class="hold-copy">
+        <span class="hold-word">Hold.</span>
+        <span class="hold-sub">You don’t have to choose.</span>
+      </span>
+    </button>
+    <div class="hold-after" id="hold-after" hidden>
+      <p class="hold-foot">A walk. Not treatment.</p>
+      <p class="hold-quiet">Not a medical device. If you are in danger, local emergency.</p>
+    </div>
+    <p class="sr-only" id="hold-live" aria-live="polite"></p>
+  </div>
+  <script src="./audio.js?v=5"></script>
+  <script src="./hold.js?v=5"></script>
+</body>
+</html>
