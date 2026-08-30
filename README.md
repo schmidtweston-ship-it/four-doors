@@ -33,6 +33,8 @@ https://schmidtweston-ship-it.github.io/four-doors/
 
 Share (no setup): https://schmidtweston-ship-it.github.io/four-doors/go.html
 
+When they cannot choose: https://schmidtweston-ship-it.github.io/four-doors/hold.html
+
 Works offline after the first load (PWA: manifest + service worker).
 
 ## Credits (quiet)
