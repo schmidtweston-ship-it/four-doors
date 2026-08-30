@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#120e0c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Four Doors. A walk, not a treatment. You choose." />
+  <title>Four Doors</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <link rel="stylesheet" href="./styles.css?v=4" />
+  <script>window.FOUR_DOORS_GUEST = true;</script>
+</head>
+<body class="guest">
+  <div class="app">
+    <section id="view-home" class="view" aria-label="Home">
+      <div class="top">
+        <div class="brand" id="home-brand">Four Doors</div>
+      </div>
+
+      <div class="block">
+        <h2>Where are you.</h2>
+        <div class="chips" id="q-here"></div>
+      </div>
+      <div class="block">
+        <h2>Where do you want to go.</h2>
+        <div class="chips" id="q-there"></div>
+      </div>
+      <div class="block">
+        <h2>Which door can you walk through today.</h2>
+        <div class="doors">
+          <button type="button" class="door" id="door-1">
+            <span class="n">Door 1</span>
+            <span class="t">Meet me first</span>
+            <span class="s">Match here, then walk toward there. Short match. Do not linger.</span>
+          </button>
+          <button type="button" class="door" id="door-2">
+            <span class="n">Door 2</span>
+            <span class="t">Take me there</span>
+            <span class="s">When you need out now. You can bail to door 1.</span>
+          </button>
+          <button type="button" class="door" id="door-3">
+            <span class="n">Door 3</span>
+            <span class="t">Lock to my body</span>
+            <span class="s">Tap a tempo. Color pulses. We walk it toward there.</span>
+          </button>
+          <button type="button" class="door heavy" id="door-4">
+            <span class="n">Door 4</span>
+            <span class="t" id="door4-title">Walk with me</span>
+            <span class="s">The count. One, two, three, four. Presence when words fail.</span>
+          </button>
+        </div>
+      </div>
+      <p class="safety" id="safety-line"></p>
+      <p class="guest-foot" id="guest-foot">A walk. Not treatment. · <a class="linkish" href="./index.html">Full app</a></p>
+    </section>
+
+    <section id="view-walk" class="view full" aria-label="Walk">
+      <div class="wash" id="walk-wash"></div>
+      <div class="grain"></div>
+      <div class="walk-ui">
+        <header>
+          <button type="button" class="iconbtn" id="walk-stop">Stop</button>
+          <span class="tiny" id="walk-name"></span>
+          <button type="button" class="iconbtn" id="walk-mute">Sound</button>
+        </header>
+        <div class="walk-mid">
+          <h2 id="walk-title"></h2>
+          <p class="phase" id="walk-phase"></p>
+          <div id="tap-wrap" hidden>
+            <button type="button" class="tap-pad" id="tap-pad">Tap</button>
+          </div>
+          <button type="button" class="linkish" id="bail" hidden>Meet me first instead</button>
+        </div>
+        <div class="dock">
+          <button type="button" class="iconbtn" id="switch-1">1</button>
+          <button type="button" class="iconbtn" id="switch-2">2</button>
+          <button type="button" class="iconbtn" id="switch-3">3</button>
+          <button type="button" class="iconbtn" id="switch-4">4</button>
+        </div>
+        <div id="link-player" hidden>
+          <iframe id="link-frame" title="Your track" allow="autoplay; encrypted-media; fullscreen; clipboard-write" allowfullscreen></iframe>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-partner" class="view full" aria-label="Walk with partner">
+      <div class="partner-root">
+        <div class="partner-wash" id="partner-wash"></div>
+        <div class="grain"></div>
+        <div class="partner-ui">
+          <header>
+            <button type="button" class="iconbtn" id="partner-stop">Stop</button>
+            <span class="partner-name" id="partner-name">Partner</span>
+            <button type="button" class="iconbtn" id="partner-mute">Sound</button>
+          </header>
+          <div class="count">
+            <p class="count-num" id="count-num" aria-live="polite">·</p>
+            <p class="count-words" id="count-words"></p>
+          </div>
+          <p class="partner-line" id="partner-line"></p>
+          <p class="tiny" id="back-doors-note" hidden style="text-align:center">The doors are still here if you want them.</p>
+          <button type="button" class="ready-tap" id="ready-tap">Tap with me. We'll find a count.</button>
+          <div class="partner-talk" id="partner-talk" hidden>
+            <input id="partner-input" type="text" enterkeyhint="send" autocomplete="off" placeholder="Say something, or don't." />
+            <button type="button" class="iconbtn" id="partner-send">Send</button>
+          </div>
+          <div class="dock">
+            <button type="button" class="iconbtn" id="p-switch-1">Door 1</button>
+            <button type="button" class="iconbtn" id="p-switch-2">Door 2</button>
+            <button type="button" class="iconbtn" id="p-switch-3">Door 3</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script src="./audio.js?v=4"></script>
+  <script src="./companion.js?v=4"></script>
+  <script src="./app.js?v=4"></script>
+</body>
+</html>
