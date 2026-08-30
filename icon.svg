@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Four Doors">
+  <rect width="512" height="512" rx="96" fill="#120e0c"/>
+  <g fill="none">
+    <rect x="52" y="112" width="82" height="296" rx="28" fill="#a34a32"/>
+    <rect x="160" y="112" width="82" height="296" rx="28" fill="#c17a56"/>
+    <rect x="268" y="112" width="82" height="296" rx="28" fill="#b08a5a"/>
+    <rect x="376" y="112" width="82" height="296" rx="28" fill="#7a8a76"/>
+    <circle cx="114" cy="268" r="6" fill="#201814"/>
+    <circle cx="222" cy="268" r="6" fill="#201814"/>
+    <circle cx="330" cy="268" r="6" fill="#201814"/>
+    <circle cx="438" cy="268" r="6" fill="#201814"/>
+  </g>
+</svg>
