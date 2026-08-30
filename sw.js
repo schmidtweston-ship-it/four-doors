@@ -1,7 +1,8 @@
-const CACHE = "four-doors-v3";
+const CACHE = "four-doors-v4";
 const ASSETS = [
   "./",
   "./index.html",
+  "./go.html",
   "./about.html",
   "./styles.css",
   "./app.js",
@@ -28,16 +29,33 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
+  let url;
   try {
-    if (new URL(req.url).origin !== self.location.origin) return;
+    url = new URL(req.url);
+    if (url.origin !== self.location.origin) return;
   } catch (err) {
+    return;
+  }
+  const isNav = req.mode === "navigate" || /\.html$/i.test(url.pathname) || /\/$/.test(url.pathname);
+  if (isNav) {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req).then((c) => c || caches.match("./go.html") || caches.match("./index.html")))
+    );
     return;
   }
   e.respondWith(
     caches.match(req).then((cached) => {
       const live = fetch(req)
         .then((res) => {
-          if (res && res.ok && new URL(req.url).origin === location.origin) {
+          if (res && res.ok && url.origin === location.origin) {
             const copy = res.clone();
             caches.open(CACHE).then((c) => c.put(req, copy));
           }
