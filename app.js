@@ -3,6 +3,8 @@
   const KEY = "four-doors-v1";
   const IDB_NAME = "four-doors";
   const IDB_STORE = "count-samples";
+  const IDB_LOOPS = "loops";
+  const MAX_LOOP = 25 * 1024 * 1024;
 
   const HERE = [
     { id: "wrecked", label: "wrecked", c1: "#3a1612", c2: "#1a0c0a" },
@@ -92,7 +94,9 @@
   let trackEl = null;
   let recStream = null;
   let recMedia = null;
+  let trackBlobUrl = "";
   const decodedSamples = [null, null, null, null];
+  const loopCache = {};
 
   const $ = (id) => document.getElementById(id);
   const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -205,8 +209,30 @@
     if (el && msg) el.textContent = msg;
   }
 
+  async function playBlobLoop(blob) {
+    const src = URL.createObjectURL(blob);
+    trackBlobUrl = src;
+    trackEl = new Audio();
+    trackEl.preload = "auto";
+    trackEl.loop = true;
+    trackEl.volume = 0.85;
+    trackEl.src = src;
+    await trackEl.play();
+  }
+
   async function playTrackOrBed(s, bedParams) {
     stopTrack();
+    const local = s && loopCache[s.id];
+    if (local && local.blob) {
+      try {
+        FourAudio.stopBed(0.15);
+        await playBlobLoop(local.blob);
+        setWalkNote("Your loop. On this phone.");
+        return "local";
+      } catch (e) {
+        stopTrack();
+      }
+    }
     const parsed = parseLink(s && s.trackUrl);
     if (parsed && parsed.embed) {
       FourAudio.stopBed(0.2);
@@ -217,7 +243,6 @@
     if (parsed && parsed.src) {
       try {
         trackEl = new Audio();
-        trackEl.crossOrigin = "anonymous";
         trackEl.preload = "auto";
         trackEl.loop = true;
         trackEl.volume = 0.7;
@@ -231,7 +256,7 @@
         });
         if (!failed) return "file";
         stopTrack();
-        setWalkNote("That file wouldn't play from here. Using the bed. YouTube and Spotify links work in the player.");
+        setWalkNote("That link wouldn't play. Using the bed. Load a loop on this phone and it will not fail.");
       } catch (e) {
         stopTrack();
       }
@@ -243,8 +268,12 @@
   function stopTrack() {
     if (trackEl) {
       try { trackEl.pause(); } catch (e) {}
-      try { trackEl.src = ""; } catch (e) {}
+      try { trackEl.removeAttribute("src"); trackEl.load(); } catch (e) {}
       trackEl = null;
+    }
+    if (trackBlobUrl) {
+      try { URL.revokeObjectURL(trackBlobUrl); } catch (e) {}
+      trackBlobUrl = "";
     }
     hideLinkPlayer();
   }
@@ -252,11 +281,73 @@
   /* ---------- IndexedDB samples ---------- */
   function idb() {
     return new Promise((resolve, reject) => {
-      const r = indexedDB.open(IDB_NAME, 1);
-      r.onupgradeneeded = () => r.result.createObjectStore(IDB_STORE);
+      const r = indexedDB.open(IDB_NAME, 2);
+      r.onupgradeneeded = () => {
+        const db = r.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+        if (!db.objectStoreNames.contains(IDB_LOOPS)) db.createObjectStore(IDB_LOOPS);
+      };
       r.onsuccess = () => resolve(r.result);
       r.onerror = () => reject(r.error);
     });
+  }
+  function loopKey(kind, id) { return kind + ":" + id; }
+  async function saveLoop(kind, id, file) {
+    if (!file) return;
+    if (file.size > MAX_LOOP) {
+      alert("That file is bigger than 25 MB. Pick a shorter loop.");
+      return;
+    }
+    const db = await idb();
+    await new Promise((res, rej) => {
+      const tx = db.transaction(IDB_LOOPS, "readwrite");
+      tx.objectStore(IDB_LOOPS).put({ blob: file, name: file.name, type: file.type }, loopKey(kind, id));
+      tx.oncomplete = res;
+      tx.onerror = () => rej(tx.error);
+    });
+    loopCache[id] = { blob: file, name: file.name };
+  }
+  async function deleteLoop(kind, id) {
+    try {
+      const db = await idb();
+      await new Promise((res) => {
+        const tx = db.transaction(IDB_LOOPS, "readwrite");
+        tx.objectStore(IDB_LOOPS).delete(loopKey(kind, id));
+        tx.oncomplete = res;
+        tx.onerror = res;
+      });
+    } catch (e) {}
+    delete loopCache[id];
+  }
+  async function loadLoops() {
+    try {
+      const db = await idb();
+      const rows = await new Promise((res) => {
+        const tx = db.transaction(IDB_LOOPS, "readonly");
+        const q = tx.objectStore(IDB_LOOPS).getAllKeys();
+        q.onsuccess = async () => {
+          const keys = q.result || [];
+          const out = {};
+          for (const k of keys) {
+            const item = await new Promise((r2) => {
+              const tx2 = db.transaction(IDB_LOOPS, "readonly");
+              const g = tx2.objectStore(IDB_LOOPS).get(k);
+              g.onsuccess = () => r2(g.result);
+              g.onerror = () => r2(null);
+            });
+            if (item && item.blob) {
+              const id = String(k).split(":").slice(1).join(":");
+              out[id] = { blob: item.blob, name: item.name || "loop" };
+            }
+          }
+          res(out);
+        };
+        q.onerror = () => res({});
+      });
+      Object.keys(loopCache).forEach((k) => delete loopCache[k]);
+      Object.assign(loopCache, rows);
+      if ($("view-setup") && $("view-setup").classList.contains("on")) paintSetup();
+    } catch (e) {}
   }
   async function saveSample(i, blob) {
     const db = await idb();
@@ -429,7 +520,7 @@
         await FourAudio.unlock();
         haltWalk();
         show("view-walk");
-        $("walk-name").textContent = "Try this link";
+        $("walk-name").textContent = "Try this";
         $("walk-title").textContent = s.label;
         $("walk-phase").textContent = "";
         $("tap-wrap").hidden = true;
@@ -442,17 +533,53 @@
       del.type = "button";
       del.textContent = "×";
       del.setAttribute("aria-label", "Remove " + s.label);
-      del.addEventListener("click", () => {
+      del.addEventListener("click", async () => {
         if (list.length < 2) return;
+        await deleteLoop(kind, s.id);
         list.splice(i, 1);
         save();
         paintSetup();
       });
+      const file = document.createElement("input");
+      file.type = "file";
+      file.accept = "audio/*,.mp3,.m4a,.wav,.ogg,.aac,.flac,.aiff";
+      const loadBtn = document.createElement("button");
+      loadBtn.type = "button";
+      loadBtn.className = "load";
+      const held = loopCache[s.id];
+      loadBtn.textContent = held ? "Replace loop" : "Load a loop";
+      loadBtn.addEventListener("click", () => file.click());
+      file.addEventListener("change", async () => {
+        const f = file.files && file.files[0];
+        file.value = "";
+        if (!f) return;
+        await saveLoop(kind, s.id, f);
+        s.loopName = f.name;
+        save();
+        paintSetup();
+      });
+      const status = document.createElement("span");
+      status.className = "on-phone";
+      status.textContent = held ? (held.name + " · on this phone") : "";
+      const clearLoopBtn = document.createElement("button");
+      clearLoopBtn.type = "button";
+      clearLoopBtn.className = "linkish";
+      clearLoopBtn.textContent = held ? "Clear loop" : "";
+      clearLoopBtn.hidden = !held;
+      clearLoopBtn.addEventListener("click", async () => {
+        await deleteLoop(kind, s.id);
+        s.loopName = "";
+        save();
+        paintSetup();
+      });
       row.append(name, c1, c2, del);
+      const rowLoop = document.createElement("div");
+      rowLoop.className = "loop-row";
+      rowLoop.append(loadBtn, status, clearLoopBtn);
       const row2 = document.createElement("div");
       row2.className = "state-row url-row";
       row2.append(url, tryBtn);
-      box.append(row, row2);
+      box.append(row, rowLoop, row2);
     });
   }
 
@@ -820,6 +947,7 @@
   applyCountSize();
   bind();
   loadSamples();
+  loadLoops();
   if (state.setupDone) goHome();
   else goWelcome();
 })();
