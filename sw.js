@@ -1,4 +1,4 @@
-const CACHE = "four-doors-v1";
+const CACHE = "four-doors-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -28,6 +28,11 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
+  try {
+    if (new URL(req.url).origin !== self.location.origin) return;
+  } catch (err) {
+    return;
+  }
   e.respondWith(
     caches.match(req).then((cached) => {
       const live = fetch(req)
