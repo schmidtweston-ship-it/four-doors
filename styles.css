@@ -421,3 +421,23 @@ input[type="color"] {
   background: rgba(18,14,12,0.3);
 }
 .link-note { color: var(--mute); font-size: 0.78rem; margin: 0 0 10px; }
+
+.loop-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 10px;
+  flex-wrap: wrap;
+}
+.loop-row .on-phone {
+  color: var(--sage);
+  font-size: 0.78rem;
+}
+.loop-row input[type="file"] { display: none; }
+.loop-row .load {
+  font-size: 0.82rem;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(240,230,216,0.22);
+  background: rgba(18,14,12,0.35);
+}
