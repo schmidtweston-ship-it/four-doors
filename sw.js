@@ -1,12 +1,14 @@
-const CACHE = "four-doors-v4";
+const CACHE = "four-doors-v5";
 const ASSETS = [
   "./",
   "./index.html",
   "./go.html",
+  "./hold.html",
   "./about.html",
   "./styles.css",
   "./app.js",
   "./audio.js",
+  "./hold.js",
   "./companion.js",
   "./manifest.json",
   "./icon.svg",
