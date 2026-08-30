@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#120e0c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Four Doors. A walk, not a treatment. You choose." />
+  <title>Four Doors</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app">
+    <section id="view-welcome" class="view" aria-label="Welcome">
+      <p class="brand">Four Doors</p>
+      <h1>A walk, not a treatment.</h1>
+      <p class="lede">Three questions. Four doors. You pick. Nothing is pushed.</p>
+      <p class="quiet">You can set this up now, or walk with defaults. It lives on this phone. No account.</p>
+      <div class="stack" style="margin-top:1.6rem">
+        <button type="button" class="btn primary" id="go-setup">Set up</button>
+        <button type="button" class="btn ghost" id="go-defaults">Start with defaults</button>
+      </div>
+    </section>
+
+    <section id="view-home" class="view" aria-label="Home">
+      <div class="top">
+        <div class="brand" id="home-brand">Four Doors</div>
+        <div>
+          <button type="button" class="linkish" id="home-setup">Setup</button>
+          ·
+          <button type="button" class="linkish" id="home-about">About</button>
+        </div>
+      </div>
+
+      <div class="block">
+        <h2>Where are you.</h2>
+        <div class="chips" id="q-here"></div>
+      </div>
+      <div class="block">
+        <h2>Where do you want to go.</h2>
+        <div class="chips" id="q-there"></div>
+      </div>
+      <div class="block">
+        <h2>Which door can you walk through today.</h2>
+        <div class="doors">
+          <button type="button" class="door" id="door-1">
+            <span class="n">Door 1</span>
+            <span class="t">Meet me first</span>
+            <span class="s">Match here, then walk toward there. Short match. Do not linger.</span>
+          </button>
+          <button type="button" class="door" id="door-2">
+            <span class="n">Door 2</span>
+            <span class="t">Take me there</span>
+            <span class="s">When you need out now. You can bail to door 1.</span>
+          </button>
+          <button type="button" class="door" id="door-3">
+            <span class="n">Door 3</span>
+            <span class="t">Lock to my body</span>
+            <span class="s">Tap a tempo. Color pulses. We walk it toward there.</span>
+          </button>
+          <button type="button" class="door heavy" id="door-4">
+            <span class="n">Door 4</span>
+            <span class="t" id="door4-title">Walk with Partner</span>
+            <span class="s">The count. One, two, three, four. Presence when words fail.</span>
+          </button>
+        </div>
+      </div>
+      <p class="safety" id="safety-line"></p>
+    </section>
+
+    <section id="view-setup" class="view" aria-label="Setup">
+      <div class="top">
+        <h1>Setup</h1>
+        <button type="button" class="linkish" id="setup-home">Home</button>
+      </div>
+      <p class="quiet">Ahead of time. On this phone only.</p>
+
+      <label class="field">Your name <span class="tiny">(optional)</span>
+        <input id="set-user" type="text" autocomplete="nickname" placeholder="—" />
+      </label>
+      <label class="field" style="margin-top:12px">Partner name
+        <input id="set-partner" type="text" maxlength="40" placeholder="Partner" />
+      </label>
+      <p class="tiny">Presence. Not a doctor. Not a pet. The name you want in the room.</p>
+
+      <div class="sect">
+        <h2>How the count feels</h2>
+        <p class="quiet">Door 4 holds a four-count. You can tap a beat when you walk. These are the defaults.</p>
+        <p class="tiny">Tempo range</p>
+        <div class="seg">
+          <button type="button" data-tempo="slow">Slow</button>
+          <button type="button" data-tempo="steady">Steady</button>
+          <button type="button" data-tempo="walking">Walking</button>
+        </div>
+        <p class="tiny" style="margin-top:12px">Voice-like tone</p>
+        <div class="seg">
+          <button type="button" data-tone="low">Low</button>
+          <button type="button" data-tone="warm">Warm</button>
+          <button type="button" data-tone="clear">Clear</button>
+        </div>
+        <p class="tiny" style="margin-top:12px">Numbers on screen</p>
+        <div class="seg">
+          <button type="button" data-numsize="quiet">Quiet</button>
+          <button type="button" data-numsize="present">Present</button>
+          <button type="button" data-numsize="huge">Huge</button>
+        </div>
+        <label class="field" style="margin-top:14px;flex-direction:row;align-items:center;gap:10px">
+          <input id="set-speak" type="checkbox" />
+          Speak the numbers (optional)
+        </label>
+
+        <p class="tiny" style="margin-top:16px">Record a count — yours, or someone you trust. One number per pad. If you skip this, the phone makes a soft tone.</p>
+        <div class="rec-row">
+          <button type="button" class="rec" id="rec-1"><strong>1</strong><span class="st tiny">tap to record</span></button>
+          <button type="button" class="rec" id="rec-2"><strong>2</strong><span class="st tiny">tap to record</span></button>
+          <button type="button" class="rec" id="rec-3"><strong>3</strong><span class="st tiny">tap to record</span></button>
+          <button type="button" class="rec" id="rec-4"><strong>4</strong><span class="st tiny">tap to record</span></button>
+        </div>
+        <button type="button" class="linkish" id="clear-rec" style="margin-top:8px">Clear recordings</button>
+      </div>
+
+      <div class="sect">
+        <h2>Typical here</h2>
+        <div id="here-list"></div>
+        <button type="button" class="btn" id="add-here">Add a here-state</button>
+      </div>
+      <div class="sect">
+        <h2>Typical there</h2>
+        <div id="there-list"></div>
+        <button type="button" class="btn" id="add-there">Add a there-state</button>
+      </div>
+      <div class="sect">
+        <h2>Safety sentence</h2>
+        <label class="field">Optional. Shown on the home screen.
+          <textarea id="set-safety"></textarea>
+        </label>
+      </div>
+      <div class="stack" style="margin-top:1.4rem">
+        <button type="button" class="btn primary" id="setup-done">Save and go home</button>
+      </div>
+    </section>
+
+    <section id="view-walk" class="view full" aria-label="Walk">
+      <div class="wash" id="walk-wash"></div>
+      <div class="grain"></div>
+      <div class="walk-ui">
+        <header>
+          <button type="button" class="iconbtn" id="walk-stop">Stop</button>
+          <span class="tiny" id="walk-name"></span>
+          <button type="button" class="iconbtn" id="walk-mute">Sound</button>
+        </header>
+        <div class="walk-mid">
+          <h2 id="walk-title"></h2>
+          <p class="phase" id="walk-phase"></p>
+          <div id="tap-wrap" hidden>
+            <button type="button" class="tap-pad" id="tap-pad">Tap</button>
+          </div>
+          <button type="button" class="linkish" id="bail" hidden>Meet me first instead</button>
+        </div>
+        <div class="dock">
+          <button type="button" class="iconbtn" id="switch-1">1</button>
+          <button type="button" class="iconbtn" id="switch-2">2</button>
+          <button type="button" class="iconbtn" id="switch-3">3</button>
+          <button type="button" class="iconbtn" id="switch-4">4</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-partner" class="view full" aria-label="Walk with partner">
+      <div class="partner-root">
+        <div class="partner-wash" id="partner-wash"></div>
+        <div class="grain"></div>
+        <div class="partner-ui">
+          <header>
+            <button type="button" class="iconbtn" id="partner-stop">Stop</button>
+            <span class="partner-name" id="partner-name">Partner</span>
+            <button type="button" class="iconbtn" id="partner-mute">Sound</button>
+          </header>
+          <div class="count">
+            <p class="count-num" id="count-num" aria-live="polite">·</p>
+            <p class="count-words" id="count-words"></p>
+          </div>
+          <p class="partner-line" id="partner-line"></p>
+          <p class="tiny" id="back-doors-note" hidden style="text-align:center">The doors are still here if you want them.</p>
+          <button type="button" class="ready-tap" id="ready-tap">Tap with me. We'll find a count.</button>
+          <div class="partner-talk" id="partner-talk" hidden>
+            <input id="partner-input" type="text" enterkeyhint="send" autocomplete="off" placeholder="Say something, or don't." />
+            <button type="button" class="iconbtn" id="partner-send">Send</button>
+          </div>
+          <div class="dock">
+            <button type="button" class="iconbtn" id="p-switch-1">Door 1</button>
+            <button type="button" class="iconbtn" id="p-switch-2">Door 2</button>
+            <button type="button" class="iconbtn" id="p-switch-3">Door 3</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-about" class="view" aria-label="About">
+      <div class="top">
+        <h1>About</h1>
+        <button type="button" class="linkish" id="about-home">Home</button>
+      </div>
+      <p>Four Doors is a tool. A mixture. The person chooses.</p>
+      <p>Door 1 meets you where you are, then walks. That match-then-shift idea comes from Ira Altshuler's music work in the 1940s.</p>
+      <p>Door 2 goes to the destination first. Music therapists call that compensation (Wigram and others).</p>
+      <p>Door 3 locks to a body tempo and moves it. People call that kind of locking entrainment.</p>
+      <p>Door 4 is a named partner and a four-count. Presence, and a beat the body can hold when words fail.</p>
+      <p>The mixture is the point. Evidence for any one of these, used this way, is mixed and small. This is not a treatment. It is not medical advice. It does not diagnose. You can stop. You can pick another door.</p>
+      <p class="quiet">Color is a layer on every door, not a fifth door. Sound is made in the browser unless you add your own tracks.</p>
+    </section>
+  </div>
+  <script src="./audio.js"></script>
+  <script src="./companion.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
