@@ -31,6 +31,8 @@ Then open `http://localhost:8080/` on a phone or in a browser. Sound needs a tap
 
 https://schmidtweston-ship-it.github.io/four-doors/
 
+Share (no setup): https://schmidtweston-ship-it.github.io/four-doors/go.html
+
 Works offline after the first load (PWA: manifest + service worker).
 
 ## Credits (quiet)
