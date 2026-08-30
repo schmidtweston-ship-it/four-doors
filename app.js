@@ -25,7 +25,40 @@
     { id: "moving", label: "moving", c1: "#1c2a1c", c2: "#0c140c" }
   ];
 
+  function takeState(list, id, label) {
+    const s = list.find((x) => x.id === id);
+    return { id: s.id, label: label || s.label, c1: s.c1, c2: s.c2 };
+  }
+  const GUEST_HERE = [
+    takeState(HERE, "wrecked"),
+    takeState(HERE, "heavy"),
+    takeState(HERE, "spinning"),
+    takeState(HERE, "numb"),
+    takeState(HERE, "flat", "can't name it")
+  ];
+  const GUEST_THERE = [
+    takeState(THERE, "steady"),
+    takeState(THERE, "clear"),
+    takeState(THERE, "held"),
+    takeState(THERE, "sleep", "quieter"),
+    takeState(THERE, "moving", "out")
+  ];
+
   const DEFAULT_SAFETY = "This is a walk, not a treatment. You can stop. You can pick another door.";
+  const GUEST_SAFETY = "Not a medical device. If you are in danger, call local emergency.";
+
+  function isGuestMode() {
+    if (window.FOUR_DOORS_GUEST) return true;
+    try {
+      const path = (location.pathname || "").replace(/\/+$/, "");
+      if (/(^|\/)go\.html$/i.test(path) || /(^|\/)go$/i.test(path)) return true;
+      const q = new URLSearchParams(location.search);
+      if (q.has("go")) return true;
+      const h = (location.hash || "").replace(/^#/, "").split("?")[0];
+      if (h === "go") return true;
+    } catch (e) {}
+    return false;
+  }
 
   const BED = {
     wrecked: { freq: 110, cutoff: 360, noise: 0.12, lfo: 0.05, pulse: 0.2, bpm: 48, dissonance: 0.8, fifth: false, wave: "triangle" },
@@ -79,12 +112,14 @@
   }
 
   function save() {
+    if (guest) return;
     localStorage.setItem(KEY, JSON.stringify(state));
   }
 
+  const guest = isGuestMode();
   let state = load();
-  let hereId = state.hereStates[0].id;
-  let thereId = state.thereStates[0].id;
+  let hereId = guest ? "wrecked" : state.hereStates[0].id;
+  let thereId = guest ? "steady" : state.thereStates[0].id;
   let door = 0;
   let walkTimer = null;
   let countHold = false;
@@ -99,6 +134,10 @@
   const loopCache = {};
 
   const $ = (id) => document.getElementById(id);
+  function on(id, ev, fn) {
+    const el = $(id);
+    if (el) el.addEventListener(ev, fn);
+  }
   const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function hexMix(a, b, t) {
@@ -111,8 +150,15 @@
   function findState(list, id) {
     return list.find((s) => s.id === id) || list[0];
   }
-  function here() { return findState(state.hereStates, hereId); }
-  function there() { return findState(state.thereStates, thereId); }
+  function hereList() { return guest ? GUEST_HERE : state.hereStates; }
+  function thereList() { return guest ? GUEST_THERE : state.thereStates; }
+  function here() { return findState(hereList(), hereId); }
+  function there() { return findState(thereList(), thereId); }
+  function door4Title() {
+    const n = (state.companionName || "").trim();
+    if (n && n !== "Partner") return "Walk with " + n;
+    return guest ? "Walk with me" : "Walk with Partner";
+  }
 
   function setColors(c1, c2) {
     document.documentElement.style.setProperty("--c1", c1);
@@ -222,6 +268,10 @@
 
   async function playTrackOrBed(s, bedParams) {
     stopTrack();
+    if (guest) {
+      FourAudio.startBed(bedParams || bedFor(s));
+      return "bed";
+    }
     const local = s && loopCache[s.id];
     if (local && local.blob) {
       try {
@@ -393,7 +443,10 @@
   }
 
   /* ---------- views ---------- */
-  function goWelcome() { show("view-welcome"); }
+  function goWelcome() {
+    if (guest || !$("view-welcome")) { goHome(); return; }
+    show("view-welcome");
+  }
   function goHome() {
     stopWalk();
     show("view-home");
@@ -410,10 +463,11 @@
   }
 
   function paintHome() {
-    $("home-brand").textContent = "Four Doors";
+    if ($("home-brand")) $("home-brand").textContent = "Four Doors";
+    if (!$("q-here") || !$("q-there")) return;
     $("q-here").innerHTML = "";
     $("q-there").innerHTML = "";
-    state.hereStates.forEach((s) => {
+    hereList().forEach((s) => {
       const b = document.createElement("button");
       b.className = "chip" + (s.id === hereId ? " on" : "");
       b.type = "button";
@@ -421,14 +475,16 @@
       b.addEventListener("click", () => { hereId = s.id; setColors(s.c1, s.c2); paintHome(); });
       $("q-here").appendChild(b);
     });
-    const hc = document.createElement("button");
-    hc.className = "chip custom";
-    hc.type = "button";
-    hc.textContent = "type…";
-    hc.addEventListener("click", () => addFree("here"));
-    $("q-here").appendChild(hc);
+    if (!guest) {
+      const hc = document.createElement("button");
+      hc.className = "chip custom";
+      hc.type = "button";
+      hc.textContent = "type…";
+      hc.addEventListener("click", () => addFree("here"));
+      $("q-here").appendChild(hc);
+    }
 
-    state.thereStates.forEach((s) => {
+    thereList().forEach((s) => {
       const b = document.createElement("button");
       b.className = "chip" + (s.id === thereId ? " on" : "");
       b.type = "button";
@@ -436,16 +492,20 @@
       b.addEventListener("click", () => { thereId = s.id; paintHome(); });
       $("q-there").appendChild(b);
     });
-    const tc = document.createElement("button");
-    tc.className = "chip custom";
-    tc.type = "button";
-    tc.textContent = "type…";
-    tc.addEventListener("click", () => addFree("there"));
-    $("q-there").appendChild(tc);
+    if (!guest) {
+      const tc = document.createElement("button");
+      tc.className = "chip custom";
+      tc.type = "button";
+      tc.textContent = "type…";
+      tc.addEventListener("click", () => addFree("there"));
+      $("q-there").appendChild(tc);
+    }
 
-    const name = state.companionName || "Partner";
-    $("door4-title").textContent = "Walk with " + name;
-    $("safety-line").textContent = state.safety || DEFAULT_SAFETY;
+    if ($("door4-title")) $("door4-title").textContent = door4Title();
+    if ($("safety-line")) $("safety-line").textContent = guest ? GUEST_SAFETY : (state.safety || DEFAULT_SAFETY);
+    if ($("guest-foot")) $("guest-foot").hidden = !guest;
+    if ($("home-nav")) $("home-nav").hidden = !!guest;
+    if (guest) document.body.classList.add("guest");
     setColors(here().c1, here().c2);
   }
 
@@ -467,6 +527,7 @@
   }
 
   function paintSetup() {
+    if (!$("set-user")) return;
     $("set-user").value = state.userName;
     $("set-partner").value = state.companionName;
     $("set-safety").value = state.safety;
@@ -874,63 +935,63 @@
   }
 
   function bind() {
-    $("go-setup").addEventListener("click", goSetup);
-    $("go-defaults").addEventListener("click", () => { state.setupDone = true; save(); goHome(); });
-    $("home-setup").addEventListener("click", goSetup);
-    $("home-about").addEventListener("click", goAbout);
-    $("setup-done").addEventListener("click", () => { readSetupFields(); goHome(); });
-    $("setup-home").addEventListener("click", () => { readSetupFields(); goHome(); });
-    $("about-home").addEventListener("click", goHome);
-    $("set-speak").addEventListener("change", () => { state.count.speak = $("set-speak").checked; save(); });
+    on("go-setup", "click", goSetup);
+    on("go-defaults", "click", () => { state.setupDone = true; save(); goHome(); });
+    on("home-setup", "click", goSetup);
+    on("home-about", "click", goAbout);
+    on("setup-done", "click", () => { readSetupFields(); goHome(); });
+    on("setup-home", "click", () => { readSetupFields(); goHome(); });
+    on("about-home", "click", goHome);
+    on("set-speak", "change", () => { if ($("set-speak")) { state.count.speak = $("set-speak").checked; save(); } });
     document.querySelectorAll("[data-tempo]").forEach((b) => b.addEventListener("click", () => { state.count.tempo = b.dataset.tempo; save(); paintSetup(); }));
     document.querySelectorAll("[data-tone]").forEach((b) => b.addEventListener("click", () => { state.count.tone = b.dataset.tone; save(); paintSetup(); }));
     document.querySelectorAll("[data-numsize]").forEach((b) => b.addEventListener("click", () => { state.count.numberSize = b.dataset.numsize; applyCountSize(); save(); paintSetup(); }));
-    $("add-here").addEventListener("click", () => {
+    on("add-here", "click", () => {
       state.hereStates.push({ id: "h-" + Date.now(), label: "new here", c1: "#2a1814", c2: "#1a0c0a", trackTitle: "", trackUrl: "" });
       save(); paintSetup();
     });
-    $("add-there").addEventListener("click", () => {
+    on("add-there", "click", () => {
       state.thereStates.push({ id: "t-" + Date.now(), label: "new there", c1: "#1c2c28", c2: "#0c1614", trackTitle: "", trackUrl: "" });
       save(); paintSetup();
     });
-    $("clear-rec").addEventListener("click", clearSamples);
+    on("clear-rec", "click", clearSamples);
     for (let i = 1; i <= 4; i++) {
-      $("rec-" + i).addEventListener("click", () => recordBeat(i));
+      on("rec-" + i, "click", () => recordBeat(i));
     }
 
-    $("door-1").addEventListener("click", () => enterDoor(1));
-    $("door-2").addEventListener("click", () => enterDoor(2));
-    $("door-3").addEventListener("click", () => enterDoor(3));
-    $("door-4").addEventListener("click", () => enterDoor(4));
+    on("door-1", "click", () => enterDoor(1));
+    on("door-2", "click", () => enterDoor(2));
+    on("door-3", "click", () => enterDoor(3));
+    on("door-4", "click", () => enterDoor(4));
 
-    $("walk-stop").addEventListener("click", goHome);
-    $("walk-mute").addEventListener("click", () => {
+    on("walk-stop", "click", goHome);
+    on("walk-mute", "click", () => {
       FourAudio.setMuted(!FourAudio.muted);
-      $("walk-mute").textContent = FourAudio.muted ? "Sound off" : "Sound";
+      if ($("walk-mute")) $("walk-mute").textContent = FourAudio.muted ? "Sound off" : "Sound";
     });
-    $("bail").addEventListener("click", () => enterDoor(1));
-    $("switch-1").addEventListener("click", () => enterDoor(1));
-    $("switch-2").addEventListener("click", () => enterDoor(2));
-    $("switch-3").addEventListener("click", () => enterDoor(3));
-    $("switch-4").addEventListener("click", () => enterDoor(4));
-    $("tap-pad").addEventListener("click", onBodyTap);
+    on("bail", "click", () => enterDoor(1));
+    on("switch-1", "click", () => enterDoor(1));
+    on("switch-2", "click", () => enterDoor(2));
+    on("switch-3", "click", () => enterDoor(3));
+    on("switch-4", "click", () => enterDoor(4));
+    on("tap-pad", "click", onBodyTap);
 
-    $("partner-stop").addEventListener("click", goHome);
-    $("partner-mute").addEventListener("click", () => {
+    on("partner-stop", "click", goHome);
+    on("partner-mute", "click", () => {
       FourAudio.setMuted(!FourAudio.muted);
-      $("partner-mute").textContent = FourAudio.muted ? "Sound off" : "Sound";
+      if ($("partner-mute")) $("partner-mute").textContent = FourAudio.muted ? "Sound off" : "Sound";
     });
-    $("ready-tap").addEventListener("click", async () => {
+    on("ready-tap", "click", async () => {
       await FourAudio.unlock();
       partnerTap();
     });
-    $("partner-send").addEventListener("click", sendTalk);
-    $("partner-input").addEventListener("keydown", (e) => {
+    on("partner-send", "click", sendTalk);
+    on("partner-input", "keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); sendTalk(); }
     });
-    $("p-switch-1").addEventListener("click", () => enterDoor(1));
-    $("p-switch-2").addEventListener("click", () => enterDoor(2));
-    $("p-switch-3").addEventListener("click", () => enterDoor(3));
+    on("p-switch-1", "click", () => enterDoor(1));
+    on("p-switch-2", "click", () => enterDoor(2));
+    on("p-switch-3", "click", () => enterDoor(3));
   }
 
   function sendTalk() {
@@ -946,8 +1007,13 @@
 
   applyCountSize();
   bind();
-  loadSamples();
-  loadLoops();
-  if (state.setupDone) goHome();
-  else goWelcome();
+  if (guest) {
+    document.body.classList.add("guest");
+    goHome();
+  } else {
+    loadSamples();
+    loadLoops();
+    if (state.setupDone) goHome();
+    else goWelcome();
+  }
 })();
