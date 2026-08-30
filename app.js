@@ -130,27 +130,123 @@
     return Object.assign({ freq: 120, cutoff: 500, noise: 0.06, lfo: 0.06, pulse: 0.2, bpm: 64, dissonance: 0, fifth: true, wave: "sine" }, BED[s.id] || {});
   }
 
+  function normalizeUrl(raw) {
+    if (!raw) return "";
+    let u = String(raw).trim();
+    if (!u) return "";
+    if (/^spotify:/i.test(u)) return u;
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = "https://" + u;
+    return u;
+  }
+
+  function parseLink(raw) {
+    const u = normalizeUrl(raw);
+    if (!u) return null;
+    try {
+      const spUri = u.match(/^spotify:(track|album|playlist|episode|show):([A-Za-z0-9]+)/i);
+      if (spUri) {
+        return { kind: "spotify", embed: "https://open.spotify.com/embed/" + spUri[1] + "/" + spUri[2] + "?utm_source=generator" };
+      }
+      const url = new URL(u);
+      const host = url.hostname.replace(/^www\./, "").replace(/^m\./, "").replace(/^music\./, "music.");
+      let yt = "";
+      if (host === "youtu.be") yt = url.pathname.replace(/^\//, "").split("/")[0];
+      else if (/(^|\.)youtube\.com$/.test(host) || /(^|\.)youtube-nocookie\.com$/.test(host)) {
+        yt = url.searchParams.get("v") || ((url.pathname.match(/\/(?:embed|shorts|live)\/([^/?]+)/) || [])[1] || "");
+      }
+      if (yt) {
+        return { kind: "youtube", embed: "https://www.youtube.com/embed/" + yt + "?autoplay=1&playsinline=1&rel=0" };
+      }
+      if (/(^|\.)spotify\.com$/.test(host)) {
+        const m = url.pathname.match(/\/(?:intl-[a-z]+\/)?(track|album|playlist|episode|show)\/([A-Za-z0-9]+)/i);
+        if (m) return { kind: "spotify", embed: "https://open.spotify.com/embed/" + m[1] + "/" + m[2] + "?utm_source=generator" };
+      }
+      if (/(^|\.)soundcloud\.com$/.test(host)) {
+        return { kind: "soundcloud", embed: "https://w.soundcloud.com/player/?url=" + encodeURIComponent(url.href) + "&auto_play=true&hide_related=true&show_comments=false&visual=false" };
+      }
+      if (/(^|\.)music\.apple\.com$/.test(host) || /(^|\.)itunes\.apple\.com$/.test(host)) {
+        return { kind: "apple", embed: "https://embed.music.apple.com" + url.pathname + url.search };
+      }
+      if (/(^|\.)dropbox\.com$/.test(host) || /(^|\.)dropboxusercontent\.com$/.test(host)) {
+        url.searchParams.set("dl", "1");
+        return { kind: "file", src: url.href };
+      }
+      if (/(^|\.)drive\.google\.com$/.test(host) || /(^|\.)docs\.google\.com$/.test(host)) {
+        const id = (url.pathname.match(/\/d\/([^/]+)/) || [])[1] || url.searchParams.get("id");
+        if (id) return { kind: "file", src: "https://drive.google.com/uc?export=download&id=" + id };
+      }
+      return { kind: "file", src: url.href };
+    } catch (e) {
+      return { kind: "file", src: u };
+    }
+  }
+
+  function hideLinkPlayer() {
+    const box = $("link-player");
+    const frame = $("link-frame");
+    if (box) box.hidden = true;
+    if (frame) {
+      frame.src = "about:blank";
+      if (box) box.className = "";
+    }
+  }
+
+  function showLinkPlayer(parsed) {
+    const box = $("link-player");
+    const frame = $("link-frame");
+    if (!box || !frame || !parsed || !parsed.embed) return;
+    box.hidden = false;
+    box.className = parsed.kind === "youtube" ? "yt" : "";
+    frame.src = parsed.embed;
+  }
+
+  function setWalkNote(msg) {
+    const el = $("walk-phase");
+    if (el && msg) el.textContent = msg;
+  }
+
   async function playTrackOrBed(s, bedParams) {
     stopTrack();
-    if (s.trackUrl) {
+    const parsed = parseLink(s && s.trackUrl);
+    if (parsed && parsed.embed) {
+      FourAudio.stopBed(0.2);
+      showLinkPlayer(parsed);
+      setWalkNote("Your link is in the player. Tap play if it doesn't start.");
+      return "embed";
+    }
+    if (parsed && parsed.src) {
       try {
-        trackEl = new Audio(s.trackUrl);
+        trackEl = new Audio();
+        trackEl.crossOrigin = "anonymous";
+        trackEl.preload = "auto";
         trackEl.loop = true;
         trackEl.volume = 0.7;
-        await trackEl.play();
-        return;
+        const failed = await new Promise((resolve) => {
+          const t = setTimeout(() => resolve("timeout"), 8000);
+          trackEl.onplaying = () => { clearTimeout(t); resolve(""); };
+          trackEl.onerror = () => { clearTimeout(t); resolve("error"); };
+          trackEl.src = parsed.src;
+          const p = trackEl.play();
+          if (p && p.catch) p.catch(() => {});
+        });
+        if (!failed) return "file";
+        stopTrack();
+        setWalkNote("That file wouldn't play from here. Using the bed. YouTube and Spotify links work in the player.");
       } catch (e) {
         stopTrack();
       }
     }
     FourAudio.startBed(bedParams || bedFor(s));
+    return "bed";
   }
 
   function stopTrack() {
     if (trackEl) {
       try { trackEl.pause(); } catch (e) {}
+      try { trackEl.src = ""; } catch (e) {}
       trackEl = null;
     }
+    hideLinkPlayer();
   }
 
   /* ---------- IndexedDB samples ---------- */
@@ -314,10 +410,33 @@
       c2.value = /^#/.test(s.c2) && s.c2.length === 7 ? s.c2 : "#3d2a18";
       c2.addEventListener("input", () => { s.c2 = c2.value; save(); });
       const url = document.createElement("input");
-      url.type = "url";
-      url.placeholder = "track url (optional)";
+      url.type = "text";
+      url.inputMode = "url";
+      url.autocapitalize = "off";
+      url.autocomplete = "off";
+      url.spellcheck = false;
+      url.placeholder = "YouTube, Spotify, or an audio file link";
       url.value = s.trackUrl || "";
-      url.addEventListener("change", () => { s.trackUrl = url.value.trim(); save(); });
+      const keepUrl = () => { s.trackUrl = normalizeUrl(url.value); url.value = s.trackUrl; save(); };
+      url.addEventListener("change", keepUrl);
+      url.addEventListener("blur", keepUrl);
+      const tryBtn = document.createElement("button");
+      tryBtn.type = "button";
+      tryBtn.className = "try";
+      tryBtn.textContent = "Try";
+      tryBtn.addEventListener("click", async () => {
+        keepUrl();
+        await FourAudio.unlock();
+        haltWalk();
+        show("view-walk");
+        $("walk-name").textContent = "Try this link";
+        $("walk-title").textContent = s.label;
+        $("walk-phase").textContent = "";
+        $("tap-wrap").hidden = true;
+        $("bail").hidden = true;
+        setColors(s.c1, s.c2);
+        await playTrackOrBed(s, bedFor(s));
+      });
       const del = document.createElement("button");
       del.className = "iconbtn";
       del.type = "button";
@@ -331,8 +450,8 @@
       });
       row.append(name, c1, c2, del);
       const row2 = document.createElement("div");
-      row2.className = "state-row";
-      row2.appendChild(url);
+      row2.className = "state-row url-row";
+      row2.append(url, tryBtn);
       box.append(row, row2);
     });
   }
